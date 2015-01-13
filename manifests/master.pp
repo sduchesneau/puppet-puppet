@@ -25,6 +25,8 @@ class puppet::master(
   $passenger=false,
   $certname=$::fqdn,
   $puppetdb=false,
+  $manage_service=true,
+  $manage_passenger=true,
   $hieraconfig=undef,
   $ca=true,
   $options=undef,
@@ -38,7 +40,9 @@ class puppet::master(
     package { $puppet::params::puppetmaster_package:
       ensure => absent,
     }
-    include puppet::master::passenger
+    if $manage_passenger {
+      include puppet::master::passenger
+    }
   } else {
     $puppetmaster = $puppet::params::puppetmaster_package
     if ($::osfamily == 'Debian' ) {
@@ -65,7 +69,9 @@ class puppet::master(
     ensure => present,
   }
 
-  include puppet::master::service
+  if $manage_service {
+    include puppet::master::service
+  }
 
   # Client configuration should be done before the puppetmaster is
   # launched a first time, so certificates are correctly generated.

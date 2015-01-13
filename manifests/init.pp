@@ -33,6 +33,13 @@
 # [*mount_points*]
 #   Array of hashes to create fileserver mount points. Defaults to undef.
 #   Keys are name, path and allow
+# [*manage_service*]
+#   If set to true, the puppet master service will be declared and managed
+#   This may cause conflict with the puppetdb module, which also declares it.
+# [*manage_passenger*]
+#   If set to true, the passenger configuration will be declared and managed
+#   by puppet. This is not necessary on Ubuntu because the package does it.
+#   This is ignored if 'passenger' is set to false.
 #
 # === Examples
 #
@@ -61,6 +68,8 @@ class puppet (
   $ca_server=undef,
   $passenger=false,
   $puppetdb=false,
+  $manage_service=true,
+  $manage_passenger=true,
   $autosign=[],
   $mount_points=undef,
 ) {
@@ -84,6 +93,8 @@ class puppet (
       puppetdb     => $puppetdb,
       mount_points => $mount_points,
       options      => $master_options,
+      manage_service => $manage_service,
+      manage_passenger => $manage_passenger,
     } -> anchor { 'puppet::end': }
   } else {
     Class['puppet::agent'] -> anchor { 'puppet::end': }
