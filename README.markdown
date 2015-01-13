@@ -30,8 +30,14 @@ Except for configuration parameters, only the top puppet class should invoked. U
 - *master*
   Boolean, false by default. If true, the node will be configured as a puppetmaster.
 
+- *manage_service*
+  Boolean, true by default. If you set it to false, the proper service (apache2 or puppetmaster) will not be declared and managed by this module. It is useful in case of conflict with the puppetdb module.
+
 - *passenger*
   If passenger (and master) is true, the puppetmaster will have Apache and passenger in frontend. Use this if you want to serve more than a couple of nodes.
+
+- *manage_passenger*
+  Boolean, true by default. If $passenger is true, but you do not want Puppet to manage it (only install the puppetmaster-passenger package), you can set this to false.
 
 - *autosign*
   Same as puppet configuration parameter. Use this for automated testing.
@@ -100,7 +106,61 @@ Except for configuration parameters, only the top puppet class should invoked. U
 
 ### How to use with puppetdb
 
-See in tests/puppetmaster-puppetdb.pp. This role should bootstrap a puppetmaster with puppetdb.
+Here is an example bootstrapping sequence for Ubuntu Trusty:
+
+    # make sure locales are correctly configured:
+    for i in $(env |grep ^LC_[A-Z]*= |sed 's/^LC_[A-Z]*=//' | sort -u); do locale-gen $i; done
+    apt-get -y install puppet git
+    
+    # Download puppet modules for bootstrap
+    BS=/root/bootstrap
+    mkdir -p $BS/modules
+    cd $BS
+    puppet module --modulepath $BS/modules install puppetlabs-puppetdb
+    git clone https://github.com/spiette/puppet-puppet.git $BS/modules/puppet
+    cd modules/puppet
+    git checkout trusty
+    cd $BS
+    
+    # Bootstrapping code
+    cat >bootstrap.pp <<EOF
+    apt::source { 'puppetlabs':
+      location   => 'http://apt.puppetlabs.com',
+      repos      => 'main dependencies',
+      key        => '4BD6EC30',
+      key_server => 'pgp.mit.edu',
+    }
+    Class['Apt::Update'] -> Package <| |>
+    
+    Class['Puppet'] -> Class['Puppetdb']
+    
+    class { 'puppetdb': }
+    class { 'puppetdb::master::config':
+      puppet_service_name      => 'apache2',
+      puppetdb_startup_timeout => '30',
+    }
+    class { 'puppet':
+      certname  => $::fqdn,
+      server    => $::fqdn,
+      master    => true,
+      puppetdb  => true,
+      manage_service => false,
+      manage_passenger => false,
+      passenger => true,
+    }
+    EOF
+    
+    # You may need to run the following command 2 or more times
+    # for postgresql/puppetdb to be running correctly
+    puppet apply --modulepath=/root/bootstrap/modules bootstrap.pp
+    
+    # You are now ready to populate your puppet environment (in /etc/puppet/environments/production)
+    mkdir -p /etc/puppet/environments/production/{manifests,modules}
+    # then run:
+    puppet agent --enable
+    puppet agent --test
+
+
 
 # Requirements
 
