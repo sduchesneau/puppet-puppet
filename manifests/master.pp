@@ -28,6 +28,7 @@ class puppet::master(
   $manage_service=true,
   $manage_passenger=true,
   $hieraconfig=undef,
+  $datadir='/etc/puppet/hieradata',
   $ca=true,
   $options=undef,
   $mount_points=undef,
@@ -104,6 +105,7 @@ class puppet::master(
   }
   class { 'puppet::master::hiera':
     hieraconfig => $hieraconfig,
+    datadir => $datadir,
   }
 
   file { '/var/lib/puppet/reports':

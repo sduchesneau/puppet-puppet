@@ -40,6 +40,10 @@
 #   If set to true, the passenger configuration will be declared and managed
 #   by puppet. This is not necessary on Ubuntu because the package does it.
 #   This is ignored if 'passenger' is set to false.
+# [*datadir*]
+#   Directory for hieradata, defaults to '/etc/puppet/hieradata'.
+#   Add double-quotes in value if you want to use variables
+#    (ex: '"/etc/puppet/%{::environment}/hieradata"')
 #
 # === Examples
 #
@@ -70,6 +74,7 @@ class puppet (
   $puppetdb=false,
   $manage_service=true,
   $manage_passenger=true,
+  $datadir='/etc/puppet/hieradata',
   $autosign=[],
   $mount_points=undef,
 ) {
@@ -95,6 +100,7 @@ class puppet (
       options      => $master_options,
       manage_service => $manage_service,
       manage_passenger => $manage_passenger,
+      datadir => $datadir,
     } -> anchor { 'puppet::end': }
   } else {
     Class['puppet::agent'] -> anchor { 'puppet::end': }
